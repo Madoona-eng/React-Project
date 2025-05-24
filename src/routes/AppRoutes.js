@@ -14,6 +14,7 @@ import Register from "../modules/auth/Register";
 import AdminDashboard from "../modules/admin/Dashboard";
 import Users from "../modules/admin/Users";
 import Specialties from "../modules/admin/Specialties";
+import AdminLogin from "../modules/admin/AdminLogin";
 
 // Doctor Pages
 import DoctorDashboard from "../modules/doctor/Dashboard";
@@ -46,6 +47,8 @@ export default function AppRoutes() {
         {/* Auth */}
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+
 
         {/* Admin Routes */}
         <Route
