@@ -47,7 +47,7 @@ export default function Login() {
         dispatch(setUser(res.user));
         localStorage.setItem("token", res.access);
         if (res.user.role === "Admin") window.location.href = "/admin/dashboard";
-        else if (res.user.role === "Doctor") window.location.href = "/doctor/dashboard";
+        else if (res.user.role === "Doctor") window.location.href = "/doctor";
         else window.location.href = "/patient/dashboard";
       } else {
         alert("Login failed. Check your credentials.");
