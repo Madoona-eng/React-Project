@@ -11,6 +11,13 @@ import Doctors from "./modules/admin/Doctors";
 import Specialties from "./modules/admin/Specialties";
 import Appointments from "./modules/admin/Appointments";
 
+import PatientAppointments from "./modules/patient/Appointments";
+import PatientDashboard from "./modules/patient/Dashboard";
+import PatientProfile from "./modules/patient/Profile";
+import PatientSearch from "./modules/patient/SearchDoctors";
+
+import PatientLayout from "./layouts/PatientLayout";
+
 function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -66,6 +73,22 @@ function App() {
 
         {/* Admin routes */}
         <Route path="/admin/*" element={<AdminLayout />} />
+
+        {/* Patient routes */}
+        <Route path="/patient/*" element={<PatientLayout />}>
+          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="appointments" element={<PatientAppointments />} />
+          <Route path="profile" element={<PatientProfile />} />
+          <Route path="search" element={<PatientSearch />} />
+          <Route
+            path="*"
+            element={
+              <div className="text-center mt-10 text-2xl text-red-600">
+                Patient Page Not Found
+              </div>
+            }
+          />
+        </Route>
 
         {/* Catch all */}
         <Route
