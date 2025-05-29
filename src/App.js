@@ -15,11 +15,7 @@ import PatientAppointments from "./modules/patient/Appointments";
 import PatientDashboard from "./modules/patient/Dashboard";
 import PatientProfile from "./modules/patient/Profile";
 import PatientSearch from "./modules/patient/SearchDoctors";
-<<<<<<< HEAD
-=======
 import PatientBooking from "./modules/patient/Booking";
->>>>>>> origin/patient-feature
-
 import PatientLayout from "./layouts/PatientLayout";
 
 function AdminLayout() {
