@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ استيراد useNavigate
 
 const SearchDoctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [search, setSearch] = useState('');
   const [specialty, setSpecialty] = useState('');
+  const navigate = useNavigate(); // ✅ تعريف navigate
 
   useEffect(() => {
     fetch('http://localhost:8000/doctors')
@@ -47,7 +49,10 @@ const SearchDoctors = () => {
           <div key={doc.id} className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
             <h2 className="text-xl font-semibold text-gray-800">{doc.name}</h2>
             <p className="text-gray-500 mb-4">{doc.specialty}</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <button
+              onClick={() => navigate('/patient/booking')} // ✅ التنقل عند الضغط
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
               Book Appointment
             </button>
           </div>

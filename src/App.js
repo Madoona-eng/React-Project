@@ -15,6 +15,10 @@ import PatientAppointments from "./modules/patient/Appointments";
 import PatientDashboard from "./modules/patient/Dashboard";
 import PatientProfile from "./modules/patient/Profile";
 import PatientSearch from "./modules/patient/SearchDoctors";
+<<<<<<< HEAD
+=======
+import PatientBooking from "./modules/patient/Booking";
+>>>>>>> origin/patient-feature
 
 import PatientLayout from "./layouts/PatientLayout";
 
@@ -80,6 +84,8 @@ function App() {
           <Route path="appointments" element={<PatientAppointments />} />
           <Route path="profile" element={<PatientProfile />} />
           <Route path="search" element={<PatientSearch />} />
+          <Route path="booking" element={<PatientBooking />} />
+
           <Route
             path="*"
             element={

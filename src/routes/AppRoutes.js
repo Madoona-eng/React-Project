@@ -25,6 +25,7 @@ import DoctorProfile from "../modules/doctor/Profile";
 import PatientDashboard from "../modules/patient/Dashboard";
 import SearchDoctors from "../modules/patient/SearchDoctors";
 import Appointments from "../modules/patient/Appointments";
+import Booking from '../modules/patient/Booking'; // ← تأكد المسار صحيح
 
 // Fallback
 const NotFound = () => <h1 className="text-center text-red-600 text-3xl mt-10">404 - Page Not Found</h1>;
@@ -90,6 +91,7 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<PatientDashboard />} />
           <Route path="search" element={<SearchDoctors />} />
           <Route path="appointments" element={<Appointments />} />
+          <Route path="booking" element={<Booking />} /> {/* ← ده الجديد */}
         </Route>
 
         {/* Fallback */}

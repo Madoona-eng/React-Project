@@ -1,7 +1,21 @@
 import React from 'react';
+<<<<<<< HEAD
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
+=======
+import { Link, useNavigate } from 'react-router-dom';
+import { FiLogOut } from 'react-icons/fi';  // أيقونة خروج
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/auth/login");
+  };
+
+>>>>>>> origin/patient-feature
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Welcome 👋</h1>
@@ -27,10 +41,25 @@ const Dashboard = () => {
                 📅 <span>Manage Appointments</span>
               </Link>
             </li>
+<<<<<<< HEAD
             <li>
               <Link to="/patient/profile" className="flex items-center gap-2 hover:underline">
                 👤 <span>Your Profile</span>
               </Link>
+=======
+            <li className="flex items-center justify-between">
+              <Link to="/patient/profile" className="flex items-center gap-2 hover:underline text-blue-600">
+                👤 <span>Your Profile</span>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="text-red-600 hover:text-red-800"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <FiLogOut size={20} />
+              </button>
+>>>>>>> origin/patient-feature
             </li>
           </ul>
         </div>
