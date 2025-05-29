@@ -1,4 +1,3 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./modules/auth/Login";
@@ -15,15 +14,21 @@ import PatientAppointments from "./modules/patient/Appointments";
 import PatientDashboard from "./modules/patient/Dashboard";
 import PatientProfile from "./modules/patient/Profile";
 import PatientSearch from "./modules/patient/SearchDoctors";
-import PatientBooking from "./modules/patient/Booking";
+import DoctorDashboard from './modules/doctor/DoctorDashboard';
 import PatientLayout from "./layouts/PatientLayout";
+import PatientBooking from './modules/patient/Booking'; // or wherever it's located
 
+import ProfileEditor from './modules/doctor/ProfileEditor';
+import AvailabilityManagement from './modules/doctor/AvailabilityManagement';
+import AppointmentsList from './modules/doctor/AppointmentsList';
+import DocDashboard from './modules/doctor/Dashboard'
 function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       <AdminSidebar />
       <main className="flex-grow p-6">
         <Routes>
+      
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="doctors" element={<Doctors />} />
@@ -47,6 +52,30 @@ function App() {
   return (
     <Router>
       <Routes>
+
+  <Route path="/doctor/*" element={<DoctorDashboard />}>
+      <Route 
+        index 
+        element={
+          <div>
+
+                <DocDashboard />
+          </div>
+        } 
+      />
+      <Route path="profile" element={<ProfileEditor />} />
+      <Route path="availability" element={<AvailabilityManagement />} />
+      <Route path="appointments" element={<AppointmentsList />} />
+      <Route 
+        path="*" 
+        element={
+          <div className="text-center mt-10 text-2xl text-red-600">
+            Doctor Page Not Found
+          </div>
+        } 
+      />
+    </Route>
+
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/auth/login" replace />} />
 

@@ -10,7 +10,7 @@ const Profile = () => {
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:8000/users/fd05')
+    fetch('http://localhost:8000/users/8515')
       .then(res => res.json())
       .then(data => setProfile(data));
   }, []);
@@ -20,7 +20,7 @@ const Profile = () => {
   };
 
   const handleSave = () => {
-    fetch('http://localhost:8000/users/fd05', {
+    fetch('http://localhost:8000/users/8515', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profile)
