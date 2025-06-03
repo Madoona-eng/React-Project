@@ -10,9 +10,28 @@ const Profile = () => {
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:8000/users/8515')
-      .then(res => res.json())
-      .then(data => setProfile(data));
+    const userString = localStorage.getItem('user');  // your user object key in localStorage
+    if (userString) {
+      try {
+        const user = JSON.parse(userString);          // parse JSON string to object
+        const id = user.id;                            // get user id
+        if (id) {
+          fetch(`http://localhost:8000/users/${id}`)
+            .then(res => {
+              if (!res.ok) throw new Error('Failed to fetch');
+              return res.json();
+            })
+            .then(data => setProfile(data))
+            .catch(() => setStatus('Failed to load profile.'));
+        } else {
+          setStatus('User ID not found.');
+        }
+      } catch {
+        setStatus('Failed to parse user data.');
+      }
+    } else {
+      setStatus('User not logged in.');
+    }
   }, []);
 
   const handleChange = (e) => {
@@ -20,14 +39,33 @@ const Profile = () => {
   };
 
   const handleSave = () => {
-    fetch('http://localhost:8000/users/8515', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(profile)
-    }).then(() => {
-      setStatus('Profile updated successfully!');
-      setTimeout(() => setStatus(''), 3000);
-    });
+    const userString = localStorage.getItem('user');
+    if (!userString) {
+      setStatus('User not logged in.');
+      return;
+    }
+    try {
+      const user = JSON.parse(userString);
+      const id = user.id;
+      if (!id) {
+        setStatus('User ID not found.');
+        return;
+      }
+
+      fetch(`http://localhost:8000/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to update');
+          setStatus('Profile updated successfully!');
+          setTimeout(() => setStatus(''), 3000);
+        })
+        .catch(() => setStatus('Failed to update profile.'));
+    } catch {
+      setStatus('Failed to parse user data.');
+    }
   };
 
   return (

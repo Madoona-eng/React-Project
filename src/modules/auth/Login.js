@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginUser } from "../../services/authService";
 import { setUser } from "./authSlice";
-import { Link } from "react-router-dom"; // assuming react-router
+import { Link } from "react-router-dom";
 
 export default function Login() {
   const dispatch = useDispatch();
@@ -11,6 +11,7 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
+  /* ---------- validation & handlers ---------- */
   const validate = (fields) => {
     const errs = {};
     if (!fields.email) {
@@ -26,11 +27,9 @@ export default function Login() {
     return errs;
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleBlur = (e) => {
+  const handleBlur   = (e) => {
     setTouched({ ...touched, [e.target.name]: true });
     setErrors(validate(form));
   };
@@ -47,7 +46,7 @@ export default function Login() {
         dispatch(setUser(res.user));
         localStorage.setItem("token", res.access);
         localStorage.setItem("user", JSON.stringify(res.user));
-        if (res.user.role === "Admin") window.location.href = "/admin/dashboard";
+        if (res.user.role === "Admin")  window.location.href = "/admin/dashboard";
         else if (res.user.role === "Doctor") window.location.href = "/doctor";
         else window.location.href = "/patient/dashboard";
       } else {
@@ -58,28 +57,46 @@ export default function Login() {
 
   const isValid = Object.keys(errors).length === 0 && form.email && form.password;
 
+  /* ---------- render ---------- */
   return (
-    <div className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-  <form
-  onSubmit={handleSubmit}
-  noValidate
-  className="bg-[#e0e5ec] p-8 rounded-3xl shadow-neu w-full max-w-2xl" // made max width bigger
-  style={{ minWidth: "350px" }} // prevent it from shrinking too small on very small screens
->
+<div className="min-h-screen w-full bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex flex-col items-center justify-center px-6 py-12">
+      
+      <div className="flex justify-center mb-8">
+  <img
+    src="https://raw.githubusercontent.com/abanoub1234/kkkk/refs/heads/main/ll.png"
+    alt="MediConnect Logo"
+    className="w-[250px] h-auto"
+  />
+</div>
 
-        <h1 className="text-3xl font-bold text-center text-blue-700 mb-8 select-none">Login</h1>
 
+      {/* Login form */}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        /* max width enlarged: lg≈640 px → xl≈768 px */
+  className="bg-white rounded-2xl shadow p-10 w-full max-w-none w-[600px] border border-gray-100"
+      >
+        <h2 className="text-3xl font-bold text-blue-700 text-center mb-8 select-none">
+          Login
+        </h2>
+
+        {/* Email */}
         <div className="mb-6">
+          <label htmlFor="email" className="block mb-1 text-gray-700 font-medium">
+            Email
+          </label>
           <input
+            id="email"
             name="email"
             type="email"
-            placeholder="Email"
+            placeholder="abanob@gmail.com"
             value={form.email}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`w-full p-5 rounded-xl bg-[#e0e5ec] shadow-inset border ${
-    touched.email && errors.email ? "border-red-500" : "border-transparent"
-  } text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400`}
+            className={`w-full px-4 py-3 rounded-lg border ${
+              touched.email && errors.email ? "border-red-500" : "border-gray-300"
+            } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             autoComplete="off"
           />
           {touched.email && errors.email && (
@@ -87,17 +104,22 @@ export default function Login() {
           )}
         </div>
 
-        <div className="mb-8">
+        {/* Password */}
+        <div className="mb-6">
+          <label htmlFor="password" className="block mb-1 text-gray-700 font-medium">
+            Password
+          </label>
           <input
+            id="password"
             name="password"
             type="password"
-            placeholder="Password"
+            placeholder="••••••••"
             value={form.password}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`w-full p-4 rounded-xl bg-[#e0e5ec] shadow-inset border ${
-              touched.password && errors.password ? "border-red-500" : "border-transparent"
-            } text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400`}
+            className={`w-full px-4 py-3 rounded-lg border ${
+              touched.password && errors.password ? "border-red-500" : "border-gray-300"
+            } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             autoComplete="off"
           />
           {touched.password && errors.password && (
@@ -105,42 +127,26 @@ export default function Login() {
           )}
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
           disabled={!isValid}
-          className={`w-full py-4 rounded-xl font-semibold transition duration-300
-            ${
-              isValid
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-neu-btn"
-                : "bg-blue-300 cursor-not-allowed text-white"
-            }
-          `}
+          className={`w-full py-3 rounded-lg font-semibold transition duration-300 ${
+            isValid
+              ? "bg-blue-600 hover:bg-blue-700 text-white"
+              : "bg-blue-300 text-white cursor-not-allowed"
+          }`}
         >
           Sign In
         </button>
 
+        {/* Register link */}
         <p className="mt-6 text-center text-gray-600 select-none">
           Don't have an account?{" "}
           <Link to="/auth/register" className="text-blue-600 hover:underline font-semibold">
             Register
           </Link>
         </p>
-
-        <style>{`
-          .shadow-neu {
-            box-shadow:
-              8px 8px 16px #babecc,
-              -8px -8px 16px #ffffff;
-          }
-          .shadow-inset {
-            box-shadow: inset 6px 6px 8px #babecc, inset -6px -6px 8px #ffffff;
-          }
-          .shadow-neu-btn {
-            box-shadow:
-              0 4px 8px rgb(2 113 230 / 0.6),
-              0 0 12px rgb(2 113 230 / 0.7);
-          }
-        `}</style>
       </form>
     </div>
   );

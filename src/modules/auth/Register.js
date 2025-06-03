@@ -138,182 +138,125 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex items-center justify-center px-6 py-12">
-      <form
-        onSubmit={handleSubmit}
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
-        onDrop={handleDrop}
-        className="relative bg-white rounded-3xl p-12 max-w-lg w-full
-                   shadow-2xl hover:shadow-3xl transition-shadow duration-500"
-        autoComplete="off"
-        noValidate
-      >
-        <h2 className="text-5xl font-extrabold text-[#1824ad] mb-12 text-center tracking-wider">
-          Create Account
-        </h2>
+<div className="min-h-screen w-full bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex flex-col items-center justify-center px-6 py-12">
+ 
+      <div className="flex justify-center mb-8">
+  <img
+    src="https://raw.githubusercontent.com/abanoub1234/kkkk/refs/heads/main/ll.png"
+    alt="MediConnect Logo"
+    className="w-[250px] h-auto"
+  />
+</div>
 
-        {/* Inputs */}
-        {[
-          { label: "Full Name", name: "name", type: "text" },
-          { label: "Email Address", name: "email", type: "email" },
-          { label: "Password", name: "password", type: "password" },
-          { label: "Confirm Password", name: "confirmPassword", type: "password" },
-        ].map(({ label, name, type }) => (
-          <div key={name} className="relative z-0 w-full mb-6 group">
-            <input
-              type={type}
-              name={name}
-              id={name}
-              value={form[name]}
-              onChange={handleChange}
-              placeholder=" "
-              className={`peer block w-full rounded-xl border
-                py-5 px-6 font-semibold
-                shadow-neumorph
-                focus:outline-none focus:border-[#1824ad] focus:shadow-neumorph-focus
-                transition-all duration-300
-                ${
-                  errors[name]
-                    ? "border-red-600 text-red-600 placeholder-red-600"
-                    : "border-transparent text-[#1824ad] bg-[#e4e9ff]"
-                }
-              `}
-            />
-            <label
-              htmlFor={name}
-              className="absolute left-6 top-6 text-[#1824ad] text-lg font-semibold
-                         peer-placeholder-shown:top-10 peer-placeholder-shown:text-[#a0a8e7] peer-placeholder-shown:text-base
-                         peer-focus:top-3 peer-focus:text-[#121f7f] peer-focus:text-sm
-                         transition-all duration-300 pointer-events-none select-none"
-            >
-              {label}
-            </label>
-            {errors[name] && (
-              <p className="text-red-600 text-sm mt-1 ml-1">{errors[name]}</p>
-            )}
-          </div>
-        ))}
+  
+  <div className="min-h-screen flex items-center justify-center bg-white px-4">
+  <form
+    onSubmit={handleSubmit}
+    onDragEnter={handleDrag}
+    onDragOver={handleDrag}
+    onDragLeave={handleDrag}
+    onDrop={handleDrop}
+  className="w-[500px] bg-white p-8 rounded-lg shadow-md"
+    autoComplete="off"
+    noValidate
+  >
+    <h2 className="text-3xl font-bold text-center text-blue-800 mb-8">
+      Register
+    </h2>
 
-        {/* Modern Upload area */}
-        <div className="mb-6">
-          <label className="block mb-2 text-[#1824ad] font-semibold text-lg">
-            Upload Profile Image
-          </label>
-          <div
-            className={`relative flex flex-col items-center justify-center
-              rounded-xl border-2 border-dashed cursor-pointer
-              transition-colors duration-300
-              ${
-                dragActive
-                  ? "border-[#1824ad] bg-[#e4e9ff]"
-                  : errors.image
-                  ? "border-red-600 bg-[#ffe6e6]"
-                  : "border-[#a0a8e7] bg-[#f9fbff]"
-              }
-              hover:border-[#1824ad] hover:bg-[#e4e9ff]
-              py-14 px-8 text-center select-none`}
-          >
-            <input
-              type="file"
-              name="image"
-              id="image"
-              accept="image/*"
-              onChange={handleChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="mx-auto mb-3 h-12 w-12 text-[#1824ad]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7 16V4m0 0L3 8m4-4l4 4m6 4v8m0 0l4-4m-4 4l-4-4"
-              />
-            </svg>
-            <p className="text-[#1824ad] font-semibold">
-              Drag & drop an image, or click to select file
-            </p>
-            {imagePreview && (
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="mt-4 w-32 h-32 object-cover rounded-xl border border-[#1824ad]"
-              />
-            )}
-          </div>
-          {errors.image && (
-            <p className="text-red-600 text-sm mt-1 ml-1">{errors.image}</p>
-          )}
-        </div>
-
-        {/* Role selector */}
-        <div className="flex gap-6 justify-center mb-12">
-          {["Patient", "Doctor"].map((r) => (
-            <button
-              type="button"
-              key={r}
-              onClick={() => handleRoleChange(r)}
-              className={`px-8 py-3 rounded-full font-semibold text-lg
-                          transition-all duration-300 shadow-neumorph
-                          ${
-                            form.role === r
-                              ? "bg-[#1824ad] text-white shadow-neumorph-active"
-                              : "bg-[#d0d6ff] text-[#1824ad] hover:bg-[#a2aaff]"
-                          }
-                          focus:outline-none`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-        {errors.role && (
-          <p className="text-red-600 text-center mb-6 font-semibold">{errors.role}</p>
+    {/* Text Inputs */}
+    {[
+      { label: "Full Name", name: "name", type: "text" },
+      { label: "Email", name: "email", type: "email" },
+      { label: "Password", name: "password", type: "password" },
+      { label: "Confirm Password", name: "confirmPassword", type: "password" },
+    ].map(({ label, name, type }) => (
+      <div key={name} className="mb-4">
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+        </label>
+        <input
+          type={type}
+          id={name}
+          name={name}
+          value={form[name]}
+          onChange={handleChange}
+          className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500
+            ${errors[name] ? "border-red-500" : "border-gray-300"}`}
+        />
+        {errors[name] && (
+          <p className="text-sm text-red-600 mt-1">{errors[name]}</p>
         )}
+      </div>
+    ))}
 
-        {/* Submit */}
+    {/* Upload */}
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Profile Image
+      </label>
+      <input
+        type="file"
+        name="image"
+        accept="image/*"
+        onChange={handleChange}
+        className="block w-full text-sm text-gray-500 file:border file:rounded file:px-3 file:py-2 file:bg-blue-50 file:text-blue-700"
+      />
+      {imagePreview && (
+        <img
+          src={imagePreview}
+          alt="Preview"
+          className="mt-3 w-24 h-24 object-cover rounded border"
+        />
+      )}
+      {errors.image && (
+        <p className="text-sm text-red-600 mt-1">{errors.image}</p>
+      )}
+    </div>
+
+    {/* Role Selector */}
+    <div className="flex justify-center space-x-4 mb-6">
+      {["Patient", "Doctor"].map((r) => (
         <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-[#1824ad] to-[#0f1a7d]
-                     text-white py-5 rounded-xl font-extrabold text-2xl tracking-wide
-                     shadow-lg hover:shadow-2xl active:scale-95
-                     transition transform duration-300 flex items-center justify-center gap-3"
+          key={r}
+          type="button"
+          onClick={() => handleRoleChange(r)}
+          className={`px-4 py-2 rounded-md text-sm font-medium
+            ${form.role === r
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
-          Sign Up
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-7 w-7"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+          {r}
         </button>
+      ))}
+    </div>
+    {errors.role && (
+      <p className="text-sm text-red-600 text-center mb-4">{errors.role}</p>
+    )}
 
-        {/* Submission error */}
-        {errors.submit && (
-          <p className="text-red-600 text-center mt-4 font-semibold">{errors.submit}</p>
-        )}
+    {/* Submit */}
+    <button
+      type="submit"
+      className="w-full bg-blue-700 text-white py-2 rounded-md text-lg font-semibold hover:bg-blue-800"
+    >
+      Sign Up
+    </button>
 
-        {/* Login message below */}
-        <p className="mt-6 text-center text-[#1824ad] font-semibold text-lg">
-          Already have an account?{" "}
-          <a
-            href="/auth/login"
-            className="underline hover:text-[#0f1a7d] transition-colors duration-300"
-          >
-            Log in
-          </a>
-        </p>
-      </form>
+    {/* Errors */}
+    {errors.submit && (
+      <p className="text-sm text-red-600 mt-4 text-center">{errors.submit}</p>
+    )}
+
+    {/* Link */}
+    <p className="mt-4 text-center text-sm text-gray-600">
+      Already have an account?{" "}
+      <a href="/auth/login" className="text-blue-700 underline">
+        Log in
+      </a>
+    </p>
+  </form>
+</div>
+
 
       <style jsx>{`
         .shadow-neumorph {
