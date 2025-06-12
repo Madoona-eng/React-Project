@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ استيراد useNavigate
+import { useNavigate } from 'react-router-dom';
 
 const SearchDoctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [search, setSearch] = useState('');
   const [specialty, setSpecialty] = useState('');
-  const navigate = useNavigate(); // ✅ تعريف navigate
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:8000/doctors')
+    fetch('http://127.0.0.1:8000/api/accounts/doctors', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      }
+    })
       .then(res => res.json())
-      .then(data => setDoctors(data));
+      .then(data => {
+        // Support paginated or non-paginated response
+        const doctorsArr = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
+        setDoctors(doctorsArr);
+      });
   }, []);
 
-  const filteredDoctors = doctors.filter(doc =>
-    doc.name.toLowerCase().includes(search.toLowerCase()) &&
+  const safeDoctors = Array.isArray(doctors) ? doctors : [];
+
+  const filteredDoctors = safeDoctors.filter(doc =>
+    (doc.username || doc.name || '').toLowerCase().includes(search.toLowerCase()) &&
     (specialty === '' || doc.specialty === specialty)
   );
 
-  const specialties = [...new Set(doctors.map(d => d.specialty))];
+  const specialties = [...new Set(safeDoctors.map(d => d.specialty))];
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -47,10 +57,12 @@ const SearchDoctors = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDoctors.map(doc => (
           <div key={doc.id} className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
-            <h2 className="text-xl font-semibold text-gray-800">{doc.name}</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {doc.username || doc.name}
+            </h2>
             <p className="text-gray-500 mb-4">{doc.specialty}</p>
             <button
-              onClick={() => navigate('/patient/booking')} // ✅ التنقل عند الضغط
+              onClick={() => navigate(`/patient/booking?doctor=${doc.id}`)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
             >
               Book Appointment

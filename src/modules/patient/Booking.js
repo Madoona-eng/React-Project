@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Booking = () => {
   const [doctors, setDoctors] = useState([]);
@@ -9,27 +9,46 @@ const Booking = () => {
     dateTime: "",
   });
   const [loading, setLoading] = useState(false);
-  const [notification, setNotification] = useState(""); // ✅ إشعار داخلي
+  const [notification, setNotification] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    fetch("http://localhost:8000/doctors")
+    const params = new URLSearchParams(location.search);
+    const doctorIdFromURL = params.get("doctor");
+    if (doctorIdFromURL) {
+      setFormData((prev) => ({ ...prev, doctorId: doctorIdFromURL }));
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/accounts/doctors", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
       .then((res) => res.json())
-      .then((data) => setDoctors(data));
+      .then((data) => {
+        const doctorsArr = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
+        setDoctors(doctorsArr);
+      });
   }, []);
 
   useEffect(() => {
     if (formData.doctorId) {
-      const doctor = doctors.find((doc) => doc.id === formData.doctorId);
-      if (doctor) {
-        setAvailableTimes(doctor.availability || []);
-        setFormData((prev) => ({ ...prev, dateTime: "" }));
-      }
+      const now = new Date();
+      const times = [...Array(5)].map((_, i) => {
+        const slot = new Date(now);
+        slot.setDate(now.getDate() + i);
+        slot.setHours(10 + (i % 3), 0, 0, 0);
+        return slot.toISOString();
+      });
+      setAvailableTimes(times);
+      setFormData((prev) => ({ ...prev, dateTime: "" }));
     } else {
       setAvailableTimes([]);
-      setFormData((prev) => ({ ...prev, dateTime: "" }));
     }
-  }, [formData.doctorId, doctors]);
+  }, [formData.doctorId]);
 
   const showNotification = (message) => {
     setNotification(message);
@@ -40,44 +59,43 @@ const Booking = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleBooking = async (e) => {
-    e.preventDefault();
-    if (!formData.doctorId || !formData.dateTime) return alert("Please fill all fields");
+ const handleBooking = async (e) => {
+  e.preventDefault();
+  if (!formData.doctorId || !formData.dateTime) {
+    return alert("Please fill all fields");
+  }
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) return alert("User not logged in");
+  setLoading(true);
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/patients/appointments/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        doctor_id: Number(formData.doctorId),
+        date: formData.dateTime.split("T")[0],
+        time: formData.dateTime.split("T")[1].substring(0, 8),
+      }),
+    });
 
-    setLoading(true);
-    const newAppointment = {
-      ...formData,
-      id: Date.now(),
-      status: "pending",
-      patientName: user.name,
-      patientId: user.id
-    };
-
-    try {
-      await fetch("http://localhost:8000/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAppointment),
-      });
-
-      showNotification("✅ Appointment booked! Confirmation email sent.");
-      setTimeout(() => {
-        navigate("/patient/appointments");
-      }, 2000);
-    } catch (err) {
-      alert("Error booking appointment");
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      throw new Error("Booking failed");
     }
-  };
+
+    showNotification("✅ Appointment booked successfully!");
+    setTimeout(() => navigate("/patient/appointments"), 2000);
+  } catch (err) {
+    alert("❌ Error booking appointment. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 relative">
-
-      {/* ✅ إشعار داخلي */}
       {notification && (
         <div className="fixed top-5 right-5 bg-green-600 text-white py-2 px-4 rounded-xl shadow-lg z-50 transition-all">
           {notification}
@@ -87,7 +105,6 @@ const Booking = () => {
       <form onSubmit={handleBooking} className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Book an Appointment</h2>
 
-        {/* Doctor Select */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Select Doctor</label>
           <select
@@ -100,13 +117,12 @@ const Booking = () => {
             <option value="">-- Choose Doctor --</option>
             {doctors.map((doc) => (
               <option key={doc.id} value={doc.id}>
-                {doc.name} - {doc.specialty}
+                {(doc.username || doc.name)} - {doc.specialty}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Available Appointment Times */}
         <div className="mb-6">
           <label className="block text-gray-700 mb-2">Appointment Time</label>
           <select
@@ -126,7 +142,6 @@ const Booking = () => {
           </select>
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}

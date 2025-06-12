@@ -7,56 +7,68 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [newDateTime, setNewDateTime] = useState('');
-  const [appointmentToCancel, setAppointmentToCancel] = useState(null); // ✅
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const navigate = useNavigate();
+
+  const token = localStorage.getItem("token");
+
+  const fetchData = () => {
+    Promise.all([
+      fetch('http://127.0.0.1:8000/api/patients/my-appointments/', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(res => res.json()),
+      fetch('http://127.0.0.1:8000/api/accounts/doctors', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(res => res.json())
+    ])
+      .then(([appointmentsData, doctorsData]) => {
+        setAppointments(Array.isArray(appointmentsData) ? appointmentsData : appointmentsData.results || []);
+        setDoctors(Array.isArray(doctorsData) ? doctorsData : doctorsData.results || []);
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const fetchData = () => {
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  Promise.all([
-    fetch('http://localhost:8000/appointments').then(res => res.json()),
-    fetch('http://localhost:8000/doctors').then(res => res.json())
-  ])
-    .then(([appointmentsData, doctorsData]) => {
-      // فلترة المواعيد الخاصة بالمستخدم الحالي
-      const userAppointments = appointmentsData.filter(
-        (appt) => appt.patientId === user?.id
-      );
-
-      setAppointments(userAppointments);
-      setDoctors(doctorsData);
-    })
-    .finally(() => setLoading(false));
-};
-
-  const getDoctorName = (id) => {
-    const doctor = doctors.find(d => d.id === id);
-    return doctor ? doctor.name : 'Unknown';
+  const getDoctorName = (doctorObj) => {
+    return doctorObj?.username || doctorObj?.name || 'Unknown';
   };
 
-  const handleReschedule = () => {
-    fetch(`http://localhost:8000/appointments/${selectedAppointment.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dateTime: newDateTime })
-    }).then(() => {
+  const handleReschedule = async () => {
+    try {
+      const date = newDateTime.split("T")[0];
+      const time = newDateTime.split("T")[1].slice(0, 5);
+
+      await fetch(`http://127.0.0.1:8000/api/patients/appointments/${selectedAppointment.id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ date, time }),
+      });
+
       setSelectedAppointment(null);
       setNewDateTime('');
       fetchData();
-    });
+    } catch (err) {
+      alert("Failed to reschedule.");
+    }
   };
 
-  const handleCancel = () => {
-    fetch(`http://localhost:8000/appointments/${appointmentToCancel.id}`, {
-      method: 'DELETE',
-    }).then(() => {
+  const handleCancel = async () => {
+    try {
+      await fetch(`http://127.0.0.1:8000/api/patients/appointments/${appointmentToCancel.id}/`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setAppointmentToCancel(null);
       fetchData();
-    });
+    } catch (err) {
+      alert("Failed to cancel appointment.");
+    }
   };
 
   if (loading) {
@@ -69,7 +81,6 @@ const Appointments = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto relative">
-      {/* زر إضافة موعد */}
       <div className="flex justify-end mb-4">
         <button
           onClick={() => navigate('/patient/booking')}
@@ -88,21 +99,22 @@ const Appointments = () => {
             className="bg-white p-5 rounded-2xl shadow hover:shadow-md transition-all border border-gray-100"
           >
             <p className="text-gray-700 mb-2">
-              <span className="font-semibold text-gray-900">Doctor:</span> {getDoctorName(app.doctorId)}
+              <span className="font-semibold text-gray-900">Doctor:</span>{' '}
+              {getDoctorName(app.doctor)}
             </p>
             <p className="text-gray-700 mb-4">
-              <span className="font-semibold text-gray-900">Time:</span>{' '}
-              {new Date(app.dateTime).toLocaleString()}
+              <span className="font-semibold text-gray-900">Date & Time:</span>{' '}
+              {`${app.date} at ${app.time}`}
             </p>
             <div className="flex space-x-2">
               <button
-                onClick={() => setAppointmentToCancel(app)} // ✅ فتح مودال الإلغاء
+                onClick={() => setAppointmentToCancel(app)}
                 className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setSelectedAppointment(app)} // ✅ فتح مودال إعادة الجدولة
+                onClick={() => setSelectedAppointment(app)}
                 className="flex-1 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition"
               >
                 Reschedule
@@ -116,7 +128,7 @@ const Appointments = () => {
         <div className="text-center text-gray-500 mt-10 text-lg">No appointments found.</div>
       )}
 
-      {/* ✅ مودال إعادة الجدولة */}
+      {/* Reschedule Modal */}
       {selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
@@ -145,14 +157,14 @@ const Appointments = () => {
         </div>
       )}
 
-      {/* ✅ مودال تأكيد الإلغاء */}
+      {/* Cancel Confirmation Modal */}
       {appointmentToCancel && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4 text-gray-800">Cancel Appointment</h2>
             <p className="mb-4 text-gray-700">
               Are you sure you want to cancel the appointment with{' '}
-              <span className="font-semibold">{getDoctorName(appointmentToCancel.doctorId)}</span>?
+              <span className="font-semibold">{getDoctorName(appointmentToCancel.doctor)}</span>?
             </p>
             <div className="flex justify-end space-x-2">
               <button

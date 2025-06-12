@@ -10,28 +10,32 @@ const Profile = () => {
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    const userString = localStorage.getItem('user');  // your user object key in localStorage
-    if (userString) {
-      try {
-        const user = JSON.parse(userString);          // parse JSON string to object
-        const id = user.id;                            // get user id
-        if (id) {
-          fetch(`http://localhost:8000/users/${id}`)
-            .then(res => {
-              if (!res.ok) throw new Error('Failed to fetch');
-              return res.json();
-            })
-            .then(data => setProfile(data))
-            .catch(() => setStatus('Failed to load profile.'));
-        } else {
-          setStatus('User ID not found.');
-        }
-      } catch {
-        setStatus('Failed to parse user data.');
-      }
-    } else {
+    const token = localStorage.getItem('token');
+    if (!token) {
       setStatus('User not logged in.');
+      return;
     }
+
+    fetch('http://127.0.0.1:8000/api/patients/profile/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          res.json().then(err => console.error('Profile fetch error:', err));
+          throw new Error('Failed to fetch profile.');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setProfile({
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+        });
+      })
+      .catch(() => setStatus('❌ Failed to load profile.'));
   }, []);
 
   const handleChange = (e) => {
@@ -39,33 +43,29 @@ const Profile = () => {
   };
 
   const handleSave = () => {
-    const userString = localStorage.getItem('user');
-    if (!userString) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       setStatus('User not logged in.');
       return;
     }
-    try {
-      const user = JSON.parse(userString);
-      const id = user.id;
-      if (!id) {
-        setStatus('User ID not found.');
-        return;
-      }
 
-      fetch(`http://localhost:8000/users/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile)
+    fetch('http://127.0.0.1:8000/api/patients/profile/', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(profile),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          res.json().then(err => console.error('Profile update error:', err));
+          throw new Error('Failed to update profile.');
+        }
+        setStatus('✅ Profile updated successfully!');
+        setTimeout(() => setStatus(''), 3000);
       })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to update');
-          setStatus('Profile updated successfully!');
-          setTimeout(() => setStatus(''), 3000);
-        })
-        .catch(() => setStatus('Failed to update profile.'));
-    } catch {
-      setStatus('Failed to parse user data.');
-    }
+      .catch(() => setStatus('❌ Failed to update profile.'));
   };
 
   return (
@@ -116,9 +116,7 @@ const Profile = () => {
           Save Changes
         </button>
 
-        {status && (
-          <p className="text-green-600 text-sm mt-2">{status}</p>
-        )}
+        {status && <p className="text-sm mt-2 text-center">{status}</p>}
       </div>
     </div>
   );
