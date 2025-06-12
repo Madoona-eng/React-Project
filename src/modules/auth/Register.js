@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { registerUser } from "../../services/authService";
+import axios from "axios";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -15,26 +15,14 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [dragActive, setDragActive] = useState(false);
 
-  // Validation functions
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
-
-  const validatePassword = (password) => {
-    // Min 8 chars, at least one uppercase, one lowercase, one digit, one special char
-    const re =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return re.test(password);
-  };
-
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validatePassword = (password) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
   const validateImage = (file) => {
     if (!file) return false;
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
     const maxSizeMB = 5;
-    return (
-      validTypes.includes(file.type) && file.size / 1024 / 1024 <= maxSizeMB
-    );
+    return validTypes.includes(file.type) && file.size / 1024 / 1024 <= maxSizeMB;
   };
 
   const handleChange = (e) => {
@@ -81,182 +69,170 @@ export default function Register() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!form.name.trim()) {
-      newErrors.name = "Full name is required";
-    } else if (form.name.trim().length < 3) {
-      newErrors.name = "Full name must be at least 3 characters";
-    }
+    if (!form.name.trim()) newErrors.name = "Full name is required";
+    else if (form.name.trim().length < 3) newErrors.name = "Full name must be at least 3 characters";
 
-    if (!form.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!validateEmail(form.email.trim())) {
-      newErrors.email = "Invalid email address";
-    }
+    if (!form.email.trim()) newErrors.email = "Email is required";
+    else if (!validateEmail(form.email.trim())) newErrors.email = "Invalid email address";
 
-    if (!form.password) {
-      newErrors.password = "Password is required";
-    } else if (!validatePassword(form.password)) {
+    if (!form.password) newErrors.password = "Password is required";
+    else if (!validatePassword(form.password))
       newErrors.password =
         "Password must be at least 8 characters, include uppercase, lowercase, number, and special character";
-    }
 
-    if (!form.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (form.confirmPassword !== form.password) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
+    if (!form.confirmPassword) newErrors.confirmPassword = "Please confirm your password";
+    else if (form.confirmPassword !== form.password) newErrors.confirmPassword = "Passwords do not match";
 
-    if (!form.image) {
-      newErrors.image = "Profile image is required";
-    } else if (!validateImage(form.image)) {
-      newErrors.image = "Image must be JPG/PNG/GIF and less than 5MB";
-    }
+    if (!form.image) newErrors.image = "Profile image is required";
+    else if (!validateImage(form.image)) newErrors.image = "Image must be JPG/PNG/GIF and less than 5MB";
 
-    if (!["Patient", "Doctor"].includes(form.role)) {
-      newErrors.role = "Please select a valid role";
-    }
+    if (!["Patient", "Doctor"].includes(form.role)) newErrors.role = "Please select a valid role";
 
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      await registerUser(form);
+      const formData = new FormData();
+      formData.append("name", form.name); // changed from 'username' to 'name'
+      formData.append("email", form.email);
+      formData.append("password", form.password);
+      formData.append("role", form.role);
+      formData.append("image", form.image);
+
+      const response = await axios.post("http://127.0.0.1:8000/api/accounts/register/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       alert("Registration successful! Please login.");
       window.location.href = "/auth/login";
     } catch (err) {
-      setErrors({ submit: err.message || "Registration failed" });
+      // Show all backend error messages if available
+      const backendErrors = err.response?.data;
+      let errorMsg = "Registration failed";
+      if (backendErrors) {
+        if (typeof backendErrors === "string") {
+          errorMsg = backendErrors;
+        } else if (backendErrors.detail) {
+          errorMsg = backendErrors.detail;
+        } else if (typeof backendErrors === "object") {
+          errorMsg = Object.values(backendErrors).join(" ");
+        }
+      }
+      setErrors({ submit: errorMsg });
     }
   };
 
   return (
-<div className="min-h-screen w-full bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex flex-col items-center justify-center px-6 py-12">
- 
+    <div className="min-h-screen w-full bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex flex-col items-center justify-center px-6 py-12">
       <div className="flex justify-center mb-8">
-  <img
-    src="https://raw.githubusercontent.com/abanoub1234/kkkk/refs/heads/main/ll.png"
-    alt="MediConnect Logo"
-    className="w-[250px] h-auto"
-  />
-</div>
-
-  
-  <div className="min-h-screen flex items-center justify-center bg-white px-4">
-  <form
-    onSubmit={handleSubmit}
-    onDragEnter={handleDrag}
-    onDragOver={handleDrag}
-    onDragLeave={handleDrag}
-    onDrop={handleDrop}
-  className="w-[500px] bg-white p-8 rounded-lg shadow-md"
-    autoComplete="off"
-    noValidate
-  >
-    <h2 className="text-3xl font-bold text-center text-blue-800 mb-8">
-      Register
-    </h2>
-
-    {/* Text Inputs */}
-    {[
-      { label: "Full Name", name: "name", type: "text" },
-      { label: "Email", name: "email", type: "email" },
-      { label: "Password", name: "password", type: "password" },
-      { label: "Confirm Password", name: "confirmPassword", type: "password" },
-    ].map(({ label, name, type }) => (
-      <div key={name} className="mb-4">
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-        <input
-          type={type}
-          id={name}
-          name={name}
-          value={form[name]}
-          onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500
-            ${errors[name] ? "border-red-500" : "border-gray-300"}`}
-        />
-        {errors[name] && (
-          <p className="text-sm text-red-600 mt-1">{errors[name]}</p>
-        )}
-      </div>
-    ))}
-
-    {/* Upload */}
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Profile Image
-      </label>
-      <input
-        type="file"
-        name="image"
-        accept="image/*"
-        onChange={handleChange}
-        className="block w-full text-sm text-gray-500 file:border file:rounded file:px-3 file:py-2 file:bg-blue-50 file:text-blue-700"
-      />
-      {imagePreview && (
         <img
-          src={imagePreview}
-          alt="Preview"
-          className="mt-3 w-24 h-24 object-cover rounded border"
+          src="https://raw.githubusercontent.com/abanoub1234/kkkk/refs/heads/main/ll.png"
+          alt="MediConnect Logo"
+          className="w-[250px] h-auto"
         />
-      )}
-      {errors.image && (
-        <p className="text-sm text-red-600 mt-1">{errors.image}</p>
-      )}
-    </div>
+      </div>
 
-    {/* Role Selector */}
-    <div className="flex justify-center space-x-4 mb-6">
-      {["Patient", "Doctor"].map((r) => (
-        <button
-          key={r}
-          type="button"
-          onClick={() => handleRoleChange(r)}
-          className={`px-4 py-2 rounded-md text-sm font-medium
-            ${form.role === r
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <form
+          onSubmit={handleSubmit}
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+          className="w-[500px] bg-white p-8 rounded-lg shadow-md"
+          autoComplete="off"
+          noValidate
         >
-          {r}
-        </button>
-      ))}
-    </div>
-    {errors.role && (
-      <p className="text-sm text-red-600 text-center mb-4">{errors.role}</p>
-    )}
+          <h2 className="text-3xl font-bold text-center text-blue-800 mb-8">Register</h2>
 
-    {/* Submit */}
-    <button
-      type="submit"
-      className="w-full bg-blue-700 text-white py-2 rounded-md text-lg font-semibold hover:bg-blue-800"
-    >
-      Sign Up
-    </button>
+          {[
+            { label: "Full Name", name: "name", type: "text" },
+            { label: "Email", name: "email", type: "email" },
+            { label: "Password", name: "password", type: "password" },
+            { label: "Confirm Password", name: "confirmPassword", type: "password" },
+          ].map(({ label, name, type }) => (
+            <div key={name} className="mb-4">
+              <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+                {label}
+              </label>
+              <input
+                type={type}
+                id={name}
+                name={name}
+                value={form[name]}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors[name] ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors[name] && <p className="text-sm text-red-600 mt-1">{errors[name]}</p>}
+            </div>
+          ))}
 
-    {/* Errors */}
-    {errors.submit && (
-      <p className="text-sm text-red-600 mt-4 text-center">{errors.submit}</p>
-    )}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+            <input
+              type="file"
+              name="image"
+              accept="image/*"
+              onChange={handleChange}
+              className="block w-full text-sm text-gray-500 file:border file:rounded file:px-3 file:py-2 file:bg-blue-50 file:text-blue-700"
+            />
+            {imagePreview && (
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="mt-3 w-24 h-24 object-cover rounded border"
+              />
+            )}
+            {errors.image && <p className="text-sm text-red-600 mt-1">{errors.image}</p>}
+          </div>
 
-    {/* Link */}
-    <p className="mt-4 text-center text-sm text-gray-600">
-      Already have an account?{" "}
-      <a href="/auth/login" className="text-blue-700 underline">
-        Log in
-      </a>
-    </p>
-  </form>
-</div>
+          <div className="flex justify-center space-x-4 mb-6">
+            {["Patient", "Doctor"].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => handleRoleChange(r)}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  form.role === r
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          {errors.role && <p className="text-sm text-red-600 text-center mb-4">{errors.role}</p>}
 
+          <button
+            type="submit"
+            className="w-full bg-blue-700 text-white py-2 rounded-md text-lg font-semibold hover:bg-blue-800"
+          >
+            Sign Up
+          </button>
+
+          {errors.submit && (
+            <p className="text-sm text-red-600 mt-4 text-center">{errors.submit}</p>
+          )}
+
+          <p className="mt-4 text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <a href="/auth/login" className="text-blue-700 underline">
+              Log in
+            </a>
+          </p>
+        </form>
+      </div>
 
       <style jsx>{`
         .shadow-neumorph {

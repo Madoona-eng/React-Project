@@ -2,14 +2,14 @@ import { createSlice } from '@reduxjs/toolkit'
 import db from '../../db.json'
 
 const initialState = {
-  profile: db.doctor,
+  profile: db.doctors,
   appointments: db.appointments,
   loading: false,
   error: null
 }
 
 const doctorSlice = createSlice({
-  name: 'doctor',
+  name: 'doctors',
   initialState,
   reducers: {
 

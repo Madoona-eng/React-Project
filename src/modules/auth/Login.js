@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { loginUser } from "../../services/authService";
 import { setUser } from "./authSlice";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function Login() {
   const dispatch = useDispatch();
-
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  /* ---------- validation & handlers ---------- */
   const validate = (fields) => {
     const errs = {};
     if (!fields.email) {
@@ -29,7 +27,7 @@ export default function Login() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleBlur   = (e) => {
+  const handleBlur = (e) => {
     setTouched({ ...touched, [e.target.name]: true });
     setErrors(validate(form));
   };
@@ -41,45 +39,45 @@ export default function Login() {
     setTouched({ email: true, password: true });
 
     if (Object.keys(validationErrors).length === 0) {
-      const res = await loginUser(form);
-      if (res?.access) {
-        dispatch(setUser(res.user));
-        localStorage.setItem("token", res.access);
-        localStorage.setItem("user", JSON.stringify(res.user));
-        if (res.user.role === "Admin")  window.location.href = "/admin/dashboard";
-        else if (res.user.role === "Doctor") window.location.href = "/doctor";
-        else window.location.href = "/patient/dashboard";
-      } else {
-        alert("Login failed. Check your credentials.");
+      try {
+        const response = await axios.post("http://127.0.0.1:8000/api/accounts/login/", form);
+        const res = response.data;
+
+        if (res?.access) {
+          dispatch(setUser(res.user));
+          localStorage.setItem("token", res.access);
+          localStorage.setItem("user", JSON.stringify(res.user));
+
+          if (res.user.role === "Admin") window.location.href = "/admin/dashboard";
+          else if (res.user.role === "Doctor") window.location.href = "/doctor";
+          else window.location.href = "/patient/dashboard";
+        } else {
+          alert("Login failed. Check your credentials.");
+        }
+      } catch (err) {
+        alert(err.response?.data?.detail || "Login failed");
       }
     }
   };
 
   const isValid = Object.keys(errors).length === 0 && form.email && form.password;
 
-  /* ---------- render ---------- */
   return (
-<div className="min-h-screen w-full bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex flex-col items-center justify-center px-6 py-12">
-      
+    <div className="min-h-screen w-full bg-gradient-to-tr from-[#d9e0ff] via-[#f0f4ff] to-[#e6ebff] flex flex-col items-center justify-center px-6 py-12">
       <div className="flex justify-center mb-8">
-  <img
-    src="https://raw.githubusercontent.com/abanoub1234/kkkk/refs/heads/main/ll.png"
-    alt="MediConnect Logo"
-    className="w-[250px] h-auto"
-  />
-</div>
+        <img
+          src="https://raw.githubusercontent.com/abanoub1234/kkkk/refs/heads/main/ll.png"
+          alt="MediConnect Logo"
+          className="w-[250px] h-auto"
+        />
+      </div>
 
-
-      {/* Login form */}
       <form
         onSubmit={handleSubmit}
         noValidate
-        /* max width enlarged: lg≈640 px → xl≈768 px */
-  className="bg-white rounded-2xl shadow p-10 w-full max-w-none w-[600px] border border-gray-100"
+        className="bg-white rounded-2xl shadow p-10 w-full max-w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl border border-gray-100"
       >
-        <h2 className="text-3xl font-bold text-blue-700 text-center mb-8 select-none">
-          Login
-        </h2>
+        <h2 className="text-3xl font-bold text-blue-700 text-center mb-8 select-none">Login</h2>
 
         {/* Email */}
         <div className="mb-6">

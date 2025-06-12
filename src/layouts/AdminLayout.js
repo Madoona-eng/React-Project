@@ -1,6 +1,14 @@
 import React, { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Outlet } from "react-router-dom";
+import { NavLink, useNavigate, Outlet } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  Stethoscope,
+  CalendarCheck,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -12,91 +20,83 @@ export default function AdminLayout() {
     navigate("/admin/login");
   };
 
+  const navItems = [
+    { path: "/admin/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
+    { path: "/admin/users", label: "Users", icon: <Users size={20} /> },
+    { path: "/admin/specialties", label: "Specialties", icon: <Stethoscope size={20} /> },
+    { path: "/admin/appointments", label: "Appointments", icon: <CalendarCheck size={20} /> },
+  ];
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 bg-blue-900 text-white flex flex-col
-          transform transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 h-full w-64 bg-gradient-to-br from-blue-900 to-indigo-800 text-white flex flex-col
+          transform transition-transform duration-300 ease-in-out z-50
           md:static md:translate-x-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          relative
         `}
       >
-        <div className="text-2xl font-bold p-6 border-b border-blue-700 flex justify-between items-center flex-shrink-0">
-          Admin Panel
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-blue-700">
+          <h1 className="text-xl font-bold tracking-wide">Admin Panel</h1>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-white text-2xl leading-none"
-            aria-label="Close sidebar"
+            className="md:hidden text-white"
           >
-            &times;
+            <X size={24} />
           </button>
         </div>
 
-        {/* Scrollable nav container */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-3 pb-20">
-          <NavLink
-            to="/admin/dashboard"
-            className={({ isActive }) =>
-              `block p-2 rounded hover:bg-blue-700 ${
-                isActive ? "bg-blue-700 font-semibold" : ""
-              }`
-            }
-          >
-            Dashboard
-          </NavLink>
-          <NavLink
-            to="/admin/users"
-            className={({ isActive }) =>
-              `block p-2 rounded hover:bg-blue-700 ${
-                isActive ? "bg-blue-700 font-semibold" : ""
-              }`
-            }
-          >
-            Users
-          </NavLink>
-          <NavLink
-            to="/admin/specialties"
-            className={({ isActive }) =>
-              `block p-2 rounded hover:bg-blue-700 ${
-                isActive ? "bg-blue-700 font-semibold" : ""
-              }`
-            }
-          >
-            Specialties
-          </NavLink>
-        </nav>
+        {/* Navigation */}
+        <div className="flex-1 flex flex-col justify-between overflow-y-auto">
+          <nav className="p-4 space-y-2">
+            {navItems.map(({ path, label, icon }) => (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 p-2 rounded-lg transition hover:bg-blue-700 ${
+                    isActive ? "bg-blue-700 font-semibold" : ""
+                  }`
+                }
+              >
+                {icon}
+                {label}
+              </NavLink>
+            ))}
+          </nav>
 
-        {/* Fixed Logout button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700 bg-blue-900 flex-shrink-0">
-          <button
-            onClick={handleLogout}
-            className="w-full p-2 bg-red-600 hover:bg-red-700 rounded"
-          >
-            Logout
-          </button>
+          {/* Logout */}
+          <div className="p-4 border-t border-blue-700">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
+            >
+              <LogOut size={20} />
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Overlay for small screens */}
+      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black opacity-50 md:hidden"
+          className="fixed inset-0 bg-black opacity-40 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
-        ></div>
+        />
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-6 bg-gray-100 min-h-screen md:ml-64">
-        {/* Hamburger menu button on small screens */}
+      <main className="flex-1 bg-gray-100 min-h-screen p-6 md:ml-64">
+        {/* Hamburger for mobile */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="md:hidden mb-4 p-2 bg-blue-900 text-white rounded"
-          aria-label="Open sidebar"
+          className="md:hidden mb-4 p-2 bg-blue-900 text-white rounded-lg"
         >
-          &#9776;
+          <Menu size={24} />
         </button>
 
         <Outlet />
