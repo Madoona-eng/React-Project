@@ -13,26 +13,59 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const params = new URLSearchParams(location.search);
+  const doctorIdFromURL = params.get("doctor");
+  const appointmentIdFromURL = params.get("id");
+  const isReschedule = params.get("reschedule") === "true";
+
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const doctorIdFromURL = params.get("doctor");
     if (doctorIdFromURL) {
       setFormData((prev) => ({ ...prev, doctorId: doctorIdFromURL }));
     }
-  }, [location.search]);
+  }, [doctorIdFromURL]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/accounts/doctors", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const doctorsArr = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
-        setDoctors(doctorsArr);
-      });
+    const fetchAllDoctors = async () => {
+      let allDoctors = [];
+      let nextUrl = "http://127.0.0.1:8000/api/accounts/doctors";
+      const token = localStorage.getItem("token");
+      while (nextUrl) {
+        const res = await fetch(nextUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (Array.isArray(data.results)) {
+          allDoctors = allDoctors.concat(data.results);
+          nextUrl = data.next;
+        } else if (Array.isArray(data)) {
+          allDoctors = allDoctors.concat(data);
+          nextUrl = null;
+        } else {
+          nextUrl = null;
+        }
+      }
+      setDoctors(allDoctors);
+    };
+    fetchAllDoctors();
   }, []);
+
+  useEffect(() => {
+    if (appointmentIdFromURL && isReschedule) {
+      fetch(`http://127.0.0.1:8000/api/patients/appointments/${appointmentIdFromURL}/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const dateTime = `${data.date}T${data.time}`;
+          setFormData({
+            doctorId: data.doctor.id,
+            dateTime,
+          });
+        });
+    }
+  }, [appointmentIdFromURL, isReschedule]);
 
   useEffect(() => {
     if (formData.doctorId) {
@@ -59,40 +92,68 @@ const Booking = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
- const handleBooking = async (e) => {
-  e.preventDefault();
-  if (!formData.doctorId || !formData.dateTime) {
-    return alert("Please fill all fields");
-  }
-
-  setLoading(true);
-  try {
-    const res = await fetch("http://127.0.0.1:8000/api/patients/appointments/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        doctor_id: Number(formData.doctorId),
-        date: formData.dateTime.split("T")[0],
-        time: formData.dateTime.split("T")[1].substring(0, 8),
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Booking failed");
+  const handleBooking = async (e) => {
+    e.preventDefault();
+    if (!formData.doctorId || !formData.dateTime) {
+      return alert("Please fill all fields");
     }
 
-    showNotification("✅ Appointment booked successfully!");
-    setTimeout(() => navigate("/patient/appointments"), 2000);
-  } catch (err) {
-    alert("❌ Error booking appointment. Try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
 
+    const endpoint = isReschedule
+      ? `http://127.0.0.1:8000/api/patients/appointments/${appointmentIdFromURL}/`
+      : `http://127.0.0.1:8000/api/patients/appointments/`;
+
+    const method = isReschedule ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          doctor_id: Number(formData.doctorId),
+          date: formData.dateTime.split("T")[0],
+          time: formData.dateTime.split("T")[1].substring(0, 8),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      showNotification(
+        isReschedule
+          ? "✅ Appointment rescheduled successfully!"
+          : "✅ Appointment booked successfully!"
+      );
+      navigate("/patient/appointments");
+    } catch (err) {
+      alert("❌ Error. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    const confirmed = window.confirm("Are you sure you want to cancel this appointment?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/patients/appointments/${appointmentIdFromURL}/cancel/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Cancel failed");
+      alert("Appointment cancelled.");
+      navigate("/patient/appointments");
+    } catch {
+      alert("Failed to cancel appointment.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 relative">
@@ -103,7 +164,9 @@ const Booking = () => {
       )}
 
       <form onSubmit={handleBooking} className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Book an Appointment</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">
+          {isReschedule ? "Reschedule Appointment" : "Book an Appointment"}
+        </h2>
 
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Select Doctor</label>
@@ -142,13 +205,25 @@ const Booking = () => {
           </select>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
-        >
-          {loading ? "Booking..." : "Book Appointment"}
-        </button>
+        <div className="flex justify-between gap-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+          >
+            {loading ? "Saving..." : isReschedule ? "Reschedule" : "Book Appointment"}
+          </button>
+
+          {isReschedule && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition"
+            >
+              Cancel Appointment
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

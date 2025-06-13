@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -7,23 +8,54 @@ const Appointments = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [newDateTime, setNewDateTime] = useState('');
-  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const navigate = useNavigate();
-
   const token = localStorage.getItem("token");
 
   const fetchData = () => {
-    Promise.all([
-      fetch('http://127.0.0.1:8000/api/patients/my-appointments/', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(res => res.json()),
-      fetch('http://127.0.0.1:8000/api/accounts/doctors', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(res => res.json())
-    ])
+    const fetchAllAppointments = async () => {
+      let allAppointments = [];
+      let nextUrl = 'http://127.0.0.1:8000/api/patients/my-appointments/';
+      while (nextUrl) {
+        const res = await fetch(nextUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (Array.isArray(data.results)) {
+          allAppointments = allAppointments.concat(data.results);
+          nextUrl = data.next;
+        } else if (Array.isArray(data)) {
+          allAppointments = allAppointments.concat(data);
+          nextUrl = null;
+        } else {
+          nextUrl = null;
+        }
+      }
+      return allAppointments;
+    };
+    const fetchAllDoctors = async () => {
+      let allDoctors = [];
+      let nextUrl = 'http://127.0.0.1:8000/api/accounts/doctors';
+      while (nextUrl) {
+        const res = await fetch(nextUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (Array.isArray(data.results)) {
+          allDoctors = allDoctors.concat(data.results);
+          nextUrl = data.next;
+        } else if (Array.isArray(data)) {
+          allDoctors = allDoctors.concat(data);
+          nextUrl = null;
+        } else {
+          nextUrl = null;
+        }
+      }
+      return allDoctors;
+    };
+    Promise.all([fetchAllAppointments(), fetchAllDoctors()])
       .then(([appointmentsData, doctorsData]) => {
-        setAppointments(Array.isArray(appointmentsData) ? appointmentsData : appointmentsData.results || []);
-        setDoctors(Array.isArray(doctorsData) ? doctorsData : doctorsData.results || []);
+        setAppointments(appointmentsData);
+        setDoctors(doctorsData);
       })
       .finally(() => setLoading(false));
   };
@@ -37,6 +69,7 @@ const Appointments = () => {
   };
 
   const handleReschedule = async () => {
+    if (!selectedAppointment || selectedAppointment.is_canceled) return;
     try {
       const date = newDateTime.split("T")[0];
       const time = newDateTime.split("T")[1].slice(0, 5);
@@ -57,19 +90,28 @@ const Appointments = () => {
       alert("Failed to reschedule.");
     }
   };
+const handleCancel = async (id) => {
+  const confirmed = window.confirm("Are you sure you want to cancel this appointment?");
+  if (!confirmed) return;
 
-  const handleCancel = async () => {
-    try {
-      await fetch(`http://127.0.0.1:8000/api/patients/appointments/${appointmentToCancel.id}/`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setAppointmentToCancel(null);
-      fetchData();
-    } catch (err) {
-      alert("Failed to cancel appointment.");
-    }
-  };
+  try {
+    await axios.post(`http://127.0.0.1:8000/api/patients/appointments/${id}/cancel/`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
+
+    // Update local state to reflect cancellation immediately
+    setAppointments(prev =>
+      prev.map(app => app.id === id ? { ...app, is_canceled: true } : app)
+    );
+
+    alert("Appointment cancelled.");
+  } catch {
+    alert("Failed to cancel appointment.");
+  }
+};
+
 
   if (loading) {
     return (
@@ -94,34 +136,61 @@ const Appointments = () => {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {appointments.map(app => (
-          <div
-            key={app.id}
-            className="bg-white p-5 rounded-2xl shadow hover:shadow-md transition-all border border-gray-100"
-          >
-            <p className="text-gray-700 mb-2">
-              <span className="font-semibold text-gray-900">Doctor:</span>{' '}
-              {getDoctorName(app.doctor)}
-            </p>
-            <p className="text-gray-700 mb-4">
-              <span className="font-semibold text-gray-900">Date & Time:</span>{' '}
-              {`${app.date} at ${app.time}`}
-            </p>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setAppointmentToCancel(app)}
-                className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setSelectedAppointment(app)}
-                className="flex-1 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition"
-              >
-                Reschedule
-              </button>
-            </div>
-          </div>
-        ))}
+  <div
+    key={app.id}
+    className={`p-5 rounded-2xl transition-all border shadow ${
+      app.is_canceled
+        ? 'bg-red-50 border-red-300 opacity-80'
+        : 'bg-white border-gray-100 hover:shadow-md'
+    }`}
+  >
+    <div className="mb-2">
+      <p className="text-gray-700">
+        <span className="font-semibold text-gray-900">Doctor:</span>{' '}
+        {getDoctorName(app.doctor)}
+      </p>
+      <p className="text-gray-700">
+        <span className="font-semibold text-gray-900">Date & Time:</span>{' '}
+        {`${app.date} at ${app.time}`}
+      </p>
+      {app.is_canceled && (
+        <p className="text-sm font-semibold text-red-600 mt-2">
+          ❌ Status: Cancelled
+        </p>
+      )}
+    </div>
+
+    <div className="flex gap-2 mt-4">
+      <button
+        onClick={() => handleCancel(app.id)}
+        disabled={app.is_canceled}
+        className={`flex-1 py-2 rounded-lg transition text-sm ${
+          app.is_canceled
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-red-600 text-white hover:bg-red-700'
+        }`}
+      >
+        Cancel
+      </button>
+      <button
+        onClick={() => {
+          if (!app.is_canceled) {
+            setSelectedAppointment(app);
+          }
+        }}
+        disabled={app.is_canceled}
+        className={`flex-1 py-2 rounded-lg transition text-sm ${
+          app.is_canceled
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-yellow-500 text-white hover:bg-yellow-600'
+        }`}
+      >
+        Reschedule
+      </button>
+    </div>
+  </div>
+))}
+
       </div>
 
       {appointments.length === 0 && (
@@ -129,7 +198,7 @@ const Appointments = () => {
       )}
 
       {/* Reschedule Modal */}
-      {selectedAppointment && (
+      {selectedAppointment && !selectedAppointment.is_canceled && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4 text-gray-800">Reschedule Appointment</h2>
@@ -151,33 +220,6 @@ const Appointments = () => {
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
               >
                 Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cancel Confirmation Modal */}
-      {appointmentToCancel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Cancel Appointment</h2>
-            <p className="mb-4 text-gray-700">
-              Are you sure you want to cancel the appointment with{' '}
-              <span className="font-semibold">{getDoctorName(appointmentToCancel.doctor)}</span>?
-            </p>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setAppointmentToCancel(null)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
-              >
-                No
-              </button>
-              <button
-                onClick={handleCancel}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-              >
-                Yes, Cancel
               </button>
             </div>
           </div>

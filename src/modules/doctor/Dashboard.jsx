@@ -1,11 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { FiCalendar, FiClock, FiUser, FiActivity, FiTrendingUp } from 'react-icons/fi';
 import { BarChart, PieChart } from './ChartComponents';
 
 const DocDashboard = () => {
-  const { profile } = useSelector(state => state.doctor);
+  const [profile, setProfile] = useState(null);
+
+  // Fetch doctor profile
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setProfile({ name: 'Name not available' });
+      return;
+    }
+    fetch('http://127.0.0.1:8000/api/doctors/my_profile/', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(data => setProfile({ name: data.name || data.username || 'Name not available' }))
+      .catch(() => setProfile({ name: 'Name not available' }));
+  }, []);
   
   // Enhanced chart data with interactive elements
   const appointmentData = {
@@ -65,7 +80,7 @@ const DocDashboard = () => {
             className="text-gray-600"
             whileHover={{ x: 5 }}
           >
-            Welcome back, <span className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">Dr. {profile.name}</span>
+            Welcome back, <span className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">Doctor</span>
           </motion.p>
         </div>
         
@@ -82,6 +97,8 @@ const DocDashboard = () => {
           </span>
         </motion.div>
       </motion.div>
+
+
 
       {/* Interactive Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

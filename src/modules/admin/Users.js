@@ -4,17 +4,25 @@ import axios from "axios";
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [count, setCount] = useState(0);
   const itemsPerPage = 4;
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(currentPage);
+    // eslint-disable-next-line
+  }, [currentPage]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page) => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/accounts/users/");
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/accounts/users/?page=${page}&page_size=${itemsPerPage}`
+      );
       const data = response.data;
-      setUsers(Array.isArray(data.results) ? data.results : data);
+      const usersArr = Array.isArray(data.results) ? data.results : data;
+      setUsers(usersArr);
+      setCount(data.count || usersArr.length);
+      setTotalPages(Math.ceil((data.count || usersArr.length) / itemsPerPage));
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -31,7 +39,7 @@ export default function Users() {
         await axios.delete(`http://127.0.0.1:8000/api/accounts/users/${id}/`, {
           headers: getAuthHeaders(),
         });
-        fetchUsers(); // Refresh after deletion
+        fetchUsers(currentPage); // Refresh after deletion
       } catch (error) {
         console.error("Error deleting user:", error);
       }
@@ -39,11 +47,6 @@ export default function Users() {
   };
 
   const safeUsers = Array.isArray(users) ? users : [];
-  const totalPages = Math.ceil(safeUsers.length / itemsPerPage);
-  const paginatedUsers = safeUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -51,12 +54,12 @@ export default function Users() {
         User Management
       </h1>
 
-      {paginatedUsers.length === 0 ? (
+      {safeUsers.length === 0 ? (
         <p className="text-center text-gray-500">No users found.</p>
       ) : (
         <>
           <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {paginatedUsers.map((user) => (
+            {safeUsers.map((user) => (
               <div
                 key={user.id}
                 className="bg-white rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300"
@@ -106,7 +109,7 @@ export default function Users() {
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {count > itemsPerPage && totalPages > 1 && (
             <div className="mt-8 flex justify-center gap-2">
               {Array.from({ length: totalPages }, (_, i) => (
                 <button

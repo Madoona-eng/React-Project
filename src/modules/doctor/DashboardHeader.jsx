@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import { FiCalendar, FiBell, FiSearch } from 'react-icons/fi'
 
 const DashboardHeader = () => {
-  
   const profile = useSelector(state => state.doctor.profile)
   const today = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -20,8 +19,6 @@ const DashboardHeader = () => {
       className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"
     >
       <div>
-     
-        
         {profile && (
           <motion.div 
             className="mt-2 space-y-1"
@@ -29,12 +26,16 @@ const DashboardHeader = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <p className="text-lg text-gray-700 dark:text-gray-300">
-              Welcome back, <span className="font-semibold text-primary-600 dark:text-primary-400">Dr. {profile.name}</span>
-            </p>
+<p className="text-lg text-gray-700 dark:text-gray-300">
+  Welcome back,{" "}
+  <span className="font-semibold text-primary-600 dark:text-primary-400">
+    {profile.user?.full_name || 'Doctor'}
+  </span>
+</p>
+
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
-                {profile.specialty}
+                {profile.specialty || 'Specialty'}
               </span>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {today}
@@ -69,13 +70,13 @@ const DashboardHeader = () => {
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
         </motion.button>
 
-        {profile?.image && (
+        {profile?.user?.image && (
           <motion.div
             className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-500"
             whileHover={{ scale: 1.05 }}
           >
             <img 
-              src={profile.image} 
+              src={profile.user.image} 
               alt="Profile" 
               className="w-full h-full object-cover"
             />

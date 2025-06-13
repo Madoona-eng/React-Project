@@ -1,21 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import DashboardHeader from './DashboardHeader';
-import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { FiUser, FiLogOut } from 'react-icons/fi';
+import axios from 'axios';
 
 const DoctorDashboard = () => {
-  const profile = useSelector(state => state.doctor.profile);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Optionally handle not logged in
+      return;
+    }
+    fetch('http://127.0.0.1:8000/api/doctors/my_profile/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          res.json().then(err => console.error('Doctor profile fetch error:', err));
+          throw new Error('Failed to fetch doctor profile.');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setProfile(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching doctor profile:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
   const handleLogout = () => {
-    // Add logout logic here (e.g., clear token/state) if needed
+    localStorage.removeItem('token'); // Optional: clear auth token
     navigate('/auth/login');
   };
 
-  if (!profile) {
+  if (loading) {
     return <div className="text-center p-6">Loading profile...</div>;
+  }
+
+  if (!profile) {
+    return <div className="text-center p-6 text-red-500">Failed to load profile.</div>;
   }
 
   return (
@@ -27,16 +61,26 @@ const DoctorDashboard = () => {
             className="w-16 h-16 rounded-full mb-3 overflow-hidden border-4 border-white shadow-lg"
             whileHover={{ scale: 1.05 }}
           >
-            {profile?.image ? (
-              <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
+            {profile?.user?.image ? (
+              <img
+                src={
+                  profile.user.image.startsWith('http')
+                    ? profile.user.image
+                    : `http://localhost:8000${profile.user.image}`
+                }
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full bg-blue-700 flex items-center justify-center">
                 <FiUser className="w-8 h-8 text-white" />
               </div>
             )}
           </motion.div>
-          <h3 className="font-semibold text-center">Dr. {profile?.name || 'Name not available'}</h3>
-          <p className="text-xs text-blue-200 text-center">{profile?.specialty || 'Specialty not available'}</p>
+          <h3 className="font-semibold text-center">
+            Dr. {profile?.user?.full_name || profile?.user?.username || 'Name not available'}
+          </h3>
+
         </div>
 
         <h2 className="text-2xl font-bold mb-8">Doctor Portal</h2>

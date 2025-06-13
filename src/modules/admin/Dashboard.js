@@ -25,22 +25,42 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
+    const fetchAllPages = async (url, token) => {
+      let all = [];
+      let nextUrl = url;
+      let totalCount = 0;
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+      while (nextUrl) {
+        const res = await axios.get(nextUrl, config);
+        if (Array.isArray(res.data.results)) {
+          all = all.concat(res.data.results);
+          if (res.data.count) totalCount = res.data.count;
+          nextUrl = res.data.next;
+        } else if (Array.isArray(res.data)) {
+          all = all.concat(res.data);
+          nextUrl = null;
+        } else {
+          nextUrl = null;
+        }
+      }
+      return { all, totalCount: totalCount || all.length };
+    };
+
     const fetchData = async () => {
+      const token = localStorage.getItem("token");
       try {
-        const [usersRes, docsRes, apptsRes] = await Promise.all([
-          axios.get("http://127.0.0.1:8000/api/accounts/users/"),
-          axios.get("http://127.0.0.1:8000/api/accounts/doctors"),
-          axios.get("http://127.0.0.1:8000/api/accounts/appointments"),
+        const [usersObj, docsObj, apptsObj] = await Promise.all([
+          fetchAllPages("http://127.0.0.1:8000/api/accounts/users/", token),
+          fetchAllPages("http://127.0.0.1:8000/api/accounts/doctors", token),
+          fetchAllPages("http://127.0.0.1:8000/api/accounts/appointments", token),
         ]);
 
-        // Support paginated or non-paginated response for users, doctors, appointments
-        const usersArr = Array.isArray(usersRes.data.results) ? usersRes.data.results : (Array.isArray(usersRes.data) ? usersRes.data : []);
-        const docsArr = Array.isArray(docsRes.data.results) ? docsRes.data.results : (Array.isArray(docsRes.data) ? docsRes.data : []);
-        const apptsArr = Array.isArray(apptsRes.data.results) ? apptsRes.data.results : (Array.isArray(apptsRes.data) ? apptsRes.data : []);
-
-        const users = usersArr.length;
-        const doctors = docsArr.length;
-        const appointments = apptsArr.length;
+        const users = usersObj.totalCount;
+        const doctors = docsObj.totalCount;
+        const appointments = apptsObj.totalCount;
+        const apptsArr = apptsObj.all;
 
         const monthly = Array.from({ length: 12 }, (_, i) => ({
           month: new Date(0, i).toLocaleString("default", { month: "short" }),
@@ -55,7 +75,7 @@ export default function Dashboard() {
         setTotals({ users, doctors, appointments });
         setChartData(monthly);
       } catch (err) {
-        console.error("Error loading dashboard data:", err);
+        console.error("❌ Error loading dashboard data:", err);
       }
     };
 

@@ -8,17 +8,30 @@ const SearchDoctors = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/accounts/doctors', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    const fetchAllDoctors = async () => {
+      let allDoctors = [];
+      let nextUrl = 'http://127.0.0.1:8000/api/accounts/doctors';
+      const token = localStorage.getItem('token');
+      while (nextUrl) {
+        const res = await fetch(nextUrl, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await res.json();
+        console.log('Doctors API response:', data); // Debug log
+        if (Array.isArray(data.results)) {
+          allDoctors = allDoctors.concat(data.results);
+          nextUrl = data.next;
+        } else if (Array.isArray(data)) {
+          allDoctors = allDoctors.concat(data);
+          nextUrl = null;
+        } else {
+          nextUrl = null;
+        }
       }
-    })
-      .then(res => res.json())
-      .then(data => {
-        // Support paginated or non-paginated response
-        const doctorsArr = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
-        setDoctors(doctorsArr);
-      });
+      setDoctors(allDoctors);
+      console.log('All doctors loaded:', allDoctors.length);
+    };
+    fetchAllDoctors();
   }, []);
 
   const safeDoctors = Array.isArray(doctors) ? doctors : [];

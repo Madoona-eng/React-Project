@@ -16,17 +16,23 @@ export default function Doctors() {
   const [showModal, setShowModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [count, setCount] = useState(0);
   const itemsPerPage = 4;
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = async (page = 1) => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/api/accounts/doctors");
+      const res = await axios.get(
+        `http://127.0.0.1:8000/api/accounts/doctors?page=${page}&page_size=${itemsPerPage}`
+      );
       const doctorsArr = Array.isArray(res.data.results)
         ? res.data.results
         : Array.isArray(res.data)
         ? res.data
         : [];
       setDoctors(doctorsArr);
+      setCount(res.data.count || doctorsArr.length);
+      setTotalPages(Math.ceil((res.data.count || doctorsArr.length) / itemsPerPage));
     } catch (err) {
       console.error("Fetch error:", err);
     }
@@ -42,9 +48,9 @@ export default function Doctors() {
   };
 
   useEffect(() => {
-    fetchDoctors();
+    fetchDoctors(currentPage);
     fetchSpecialties();
-  }, []);
+  }, [currentPage]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -96,7 +102,7 @@ export default function Doctors() {
       }
 
       setForm({ name: "", email: "", image: null, role: "Doctor", specialty: "" });
-      fetchDoctors();
+      fetchDoctors(currentPage);
       setShowModal(false);
     } catch (err) {
       console.error("Submit error:", err.response?.data || err);
@@ -121,7 +127,7 @@ export default function Doctors() {
         await axios.delete(`http://127.0.0.1:8000/api/accounts/doctors/${id}`, {
           headers: getAuthHeaders(),
         });
-        fetchDoctors();
+        fetchDoctors(currentPage);
       } catch (err) {
         console.error("Delete error:", err);
       }
@@ -129,11 +135,6 @@ export default function Doctors() {
   };
 
   const safeDoctors = Array.isArray(doctors) ? doctors : [];
-  const totalPages = Math.ceil(safeDoctors.length / itemsPerPage);
-  const paginatedDoctors = safeDoctors.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
@@ -217,7 +218,7 @@ export default function Doctors() {
 
       {/* Grid of doctors */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {paginatedDoctors.map((doctor) => (
+        {safeDoctors.map((doctor) => (
           <div
             key={doctor.id}
             className="bg-white rounded-2xl shadow-md hover:shadow-xl transform hover:scale-105 transition-transform duration-300"
@@ -260,7 +261,7 @@ export default function Doctors() {
       </div>
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {count > itemsPerPage && totalPages > 1 && (
         <div className="mt-10 flex justify-center gap-2">
           {Array.from({ length: totalPages }, (_, i) => (
             <button
