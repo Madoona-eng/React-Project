@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { FiCalendar, FiClock, FiUser, FiActivity, FiTrendingUp } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiUser, FiActivity, FiTrendingUp, FiFilter } from 'react-icons/fi';
 import { BarChart, PieChart } from './ChartComponents';
 
 const DocDashboard = () => {
   const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    todayAppointments: 0,
+    avgWaitTime: 0,
+    capacity: 0
+  });
+  const [chartData, setChartData] = useState({
+    appointments: [],
+    patientTypes: []
+  });
+  const [timeRange, setTimeRange] = useState('week'); // week, month, year
 
   // Fetch doctor profile
   useEffect(() => {
@@ -22,39 +33,153 @@ const DocDashboard = () => {
       .catch(() => setProfile({ name: 'Name not available' }));
   }, []);
   
-  // Enhanced chart data with interactive elements
-  const appointmentData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-    datasets: [
-      {
+  // Fetch statistics and chart data
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Fetch stats
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/doctors/dashboard/stats/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStats({
+            totalPatients: data.total_patients || 0,
+            todayAppointments: data.today_appointments || 0,
+            avgWaitTime: data.avg_wait_time || 0,
+            capacity: data.capacity || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    // Fetch appointments data
+    const fetchAppointmentsData = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/api/doctors/appointments/?range=${timeRange}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const processedData = processAppointmentsData(data, timeRange);
+          setChartData(prev => ({ ...prev, appointments: processedData }));
+        }
+      } catch (error) {
+        console.error('Error fetching appointments data:', error);
+      }
+    };
+
+    // Fetch patient types data
+    const fetchPatientTypes = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/doctors/patient-types/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setChartData(prev => ({ ...prev, patientTypes: data }));
+        }
+      } catch (error) {
+        console.error('Error fetching patient types:', error);
+      }
+    };
+
+    fetchStats();
+    fetchAppointmentsData();
+    fetchPatientTypes();
+  }, [timeRange]);
+
+  // Process appointments data based on time range
+  const processAppointmentsData = (data, range) => {
+    const labels = [];
+    const counts = [];
+
+    switch (range) {
+      case 'week':
+        ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
+          labels.push(day);
+          counts.push(data[day.toLowerCase()] || 0);
+        });
+        break;
+      case 'month':
+        for (let i = 1; i <= 31; i++) {
+          labels.push(i);
+          counts.push(data[i] || 0);
+        }
+        break;
+      case 'year':
+        ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach(month => {
+          labels.push(month);
+          counts.push(data[month.toLowerCase()] || 0);
+        });
+        break;
+    }
+
+    return {
+      labels,
+      datasets: [{
         label: 'Appointments',
-        data: [12, 19, 8, 15, 10],
+        data: counts,
         backgroundColor: 'rgba(59, 130, 246, 0.7)',
         hoverBackgroundColor: 'rgba(59, 130, 246, 1)',
         borderRadius: 6,
         borderSkipped: false,
-      }
-    ]
+      }]
+    };
   };
 
-  const patientData = {
+  // Generate dynamic chart data
+  const appointmentData = chartData.appointments.datasets ? chartData.appointments : {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    datasets: [{
+      label: 'Appointments',
+      data: [0, 0, 0, 0, 0],
+      backgroundColor: 'rgba(59, 130, 246, 0.7)',
+      hoverBackgroundColor: 'rgba(59, 130, 246, 1)',
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  };
+
+  const patientData = chartData.patientTypes.length ? {
+    labels: chartData.patientTypes.map(type => type.name),
+    datasets: [{
+      data: chartData.patientTypes.map(type => type.count),
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.7)',
+        'rgba(16, 185, 129, 0.7)',
+        'rgba(239, 68, 68, 0.7)',
+        'rgba(245, 158, 11, 0.7)',
+      ],
+      hoverBackgroundColor: [
+        'rgba(59, 130, 246, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(245, 158, 11, 1)',
+      ],
+      borderWidth: 0,
+    }]
+  } : {
     labels: ['New', 'Follow-up', 'Emergency'],
-    datasets: [
-      {
-        data: [30, 50, 20],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.7)',
-          'rgba(16, 185, 129, 0.7)',
-          'rgba(239, 68, 68, 0.7)'
-        ],
-        hoverBackgroundColor: [
-          'rgba(59, 130, 246, 1)',
-          'rgba(16, 185, 129, 1)',
-          'rgba(239, 68, 68, 1)'
-        ],
-        borderWidth: 0,
-      }
-    ]
+    datasets: [{
+      data: [0, 0, 0],
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.7)',
+        'rgba(16, 185, 129, 0.7)',
+        'rgba(239, 68, 68, 0.7)'
+      ],
+      hoverBackgroundColor: [
+        'rgba(59, 130, 246, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(239, 68, 68, 1)'
+      ],
+      borderWidth: 0,
+    }]
   };
 
   return (
@@ -98,39 +223,37 @@ const DocDashboard = () => {
         </motion.div>
       </motion.div>
 
-
-
       {/* Interactive Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           icon={<FiUser className="w-5 h-5" />}
           title="Total Patients"
-          value="142"
-          change="+12%"
+          value={stats.totalPatients.toString()}
+          change={`${stats.totalPatients > 0 ? '+' : ''}${Math.round((stats.totalPatients - 100) / 100 * 100)}%`}
           color="blue"
           delay={0.2}
         />
         <StatCard 
           icon={<FiCalendar className="w-5 h-5" />}
           title="Today's Appointments"
-          value="8"
-          change="+2 from yesterday"
+          value={stats.todayAppointments.toString()}
+          change={`${stats.todayAppointments > 0 ? '+' : ''}${stats.todayAppointments - 5} from yesterday`}
           color="green"
           delay={0.3}
         />
         <StatCard 
           icon={<FiClock className="w-5 h-5" />}
           title="Avg. Wait Time"
-          value="15 min"
-          change="-3 min"
+          value={`${stats.avgWaitTime} min`}
+          change={`${stats.avgWaitTime < 20 ? 'Good' : 'Needs attention'}`}
           color="purple"
           delay={0.4}
         />
         <StatCard 
           icon={<FiActivity className="w-5 h-5" />}
           title="Clinic Capacity"
-          value="72%"
-          change="Optimal"
+          value={`${stats.capacity}%`}
+          change={stats.capacity < 80 ? 'Optimal' : 'High'}
           color="orange"
           delay={0.5}
         />
@@ -148,12 +271,34 @@ const DocDashboard = () => {
             boxShadow: "0 10px 25px rgba(0,0,0,0.05)"
           }}
         >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Weekly Appointments</h3>
-            <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-              <FiTrendingUp className="w-4 h-4" />
-              View trends
-            </button>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-semibold text-lg">Appointments Overview</h3>
+            <div className="flex items-center gap-3">
+              <motion.div className="flex items-center bg-gray-100 rounded-lg p-1">
+                {['week', 'month', 'year'].map((range) => (
+                  <motion.button
+                    key={range}
+                    onClick={() => setTimeRange(range)}
+                    className={`px-3 py-1 text-sm rounded-md transition-all ${
+                      timeRange === range 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-gray-600 hover:text-blue-600'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {range.charAt(0).toUpperCase() + range.slice(1)}
+                  </motion.button>
+                ))}
+              </motion.div>
+              <motion.button
+                className="p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-gray-100"
+                whileHover={{ rotate: 180 }}
+                transition={{ duration: 0.3 }}
+              >
+                <FiFilter className="w-5 h-5" />
+              </motion.button>
+            </div>
           </div>
           <div className="h-72">
             <BarChart data={appointmentData} />
@@ -170,11 +315,16 @@ const DocDashboard = () => {
             boxShadow: "0 10px 25px rgba(0,0,0,0.05)"
           }}
         >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Patient Types</h3>
-            <button className="text-sm text-blue-600 hover:text-blue-800">
-              View details
-            </button>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-semibold text-lg">Patient Distribution</h3>
+            <motion.button
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FiTrendingUp className="w-4 h-4" />
+              View Analysis
+            </motion.button>
           </div>
           <div className="h-72">
             <PieChart data={patientData} />
