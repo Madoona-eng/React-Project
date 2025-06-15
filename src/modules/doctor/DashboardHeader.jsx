@@ -2,6 +2,7 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import { FiCalendar, FiBell, FiSearch } from 'react-icons/fi'
+import { getFullImageUrl } from './utils'
 
 const DashboardHeader = () => {
   const profile = useSelector(state => state.doctor.profile)
@@ -29,15 +30,16 @@ const DashboardHeader = () => {
 <p className="text-lg text-gray-700 dark:text-gray-300">
   Welcome back,{" "}
   <span className="font-semibold text-primary-600 dark:text-primary-400">
-    {profile.user?.full_name || 'Doctor'}
+    {profile.user?.full_name || ` Dr:${profile?.user?.username}`}
   </span>
-</p>
-
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
+</p>            <div className="flex items-center gap-3">
+              <span className="px-3 py-1.5 text-sm font-medium rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 dark:from-blue-400/20 dark:to-indigo-400/20 dark:text-blue-300 border border-blue-100/50 dark:border-blue-700/30 shadow-sm backdrop-blur-sm">
                 {profile.specialty || 'Specialty'}
               </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
                 {today}
               </span>
             </div>
@@ -76,7 +78,7 @@ const DashboardHeader = () => {
             whileHover={{ scale: 1.05 }}
           >
             <img 
-              src={profile.user.image} 
+              src={getFullImageUrl(profile.user.image)} 
               alt="Profile" 
               className="w-full h-full object-cover"
             />
