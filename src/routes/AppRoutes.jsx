@@ -25,10 +25,14 @@ import DoctorProfile from "../modules/doctor/Profile";
 import PatientDashboard from "../modules/patient/Dashboard";
 import SearchDoctors from "../modules/patient/SearchDoctors";
 import Appointments from "../modules/patient/Appointments";
-import Booking from '../modules/patient/Booking'; // ← تأكد المسار صحيح
+import Booking from "../modules/patient/Booking.jsx";
 
 // Fallback
-const NotFound = () => <h1 className="text-center text-red-600 text-3xl mt-10">404 - Page Not Found</h1>;
+const NotFound = () => (
+  <h1 className="text-center text-red-600 text-3xl mt-10">
+    404 - Page Not Found
+  </h1>
+);
 
 // Helper component for role-based protection
 const PrivateRoute = ({ children, allowedRoles }) => {
@@ -45,11 +49,11 @@ export default function AppRoutes() {
   return (
     <Router>
       <Routes>
+
         {/* Auth */}
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-
 
         {/* Admin Routes */}
         <Route
@@ -96,6 +100,7 @@ export default function AppRoutes() {
 
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />
+
       </Routes>
     </Router>
   );
